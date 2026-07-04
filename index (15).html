@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kritiek Gebied — Verwerp H₀ en ontsnap uit het datalab</title>
+<!--
+  KRITIEK GEBIED — statistiek-escapegame op bachelor-WO-niveau.
+  Inhoudelijk gebaseerd op de leerlijn Onderzoeksmethoden en Statistiek
+  (KOM - TOE - VOS) zoals gegeven aan de Universiteit Utrecht, met o.a.
+  Morling & Carr et al. (2022) en Field (2018) als naslag en Grasple als
+  oefenomgeving. Regelgebaseerd, geen AI, geen dataverzameling.
+
+  OPTIONELE VIDEO'S: zet naast dit bestand een map "videos/" met mp4's.
+  Bestaat een bestand, dan speelt de video; anders de ingebouwde animatie.
+    videos/intro.mp4      — openingsscène (nachtvergrendeling valt dicht)
+    videos/station1.mp4   — whiteboard
+    videos/station2.mp4   — steekproefmachine
+    videos/station3.mp4   — toetsingsterminal
+    videos/station4.mp4   — regressieconsole
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#001240;
+  --geel:#FFD200;
+  --lichtgeel:#FFE6AB;
+  --teal:#24A793;
+  --roze:#AA1555;
+  --blauw:#5287C6;
+  --wit:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Open Sans',Arial,sans-serif;
+  background:#00081f;
+  color:var(--navy);
+  min-height:100vh;
+}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px;position:relative}
+h1,h2,h3{font-family:'Merriweather',Georgia,serif}
+
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--geel);color:var(--navy);
+  padding:10px 16px;border-radius:8px;margin-bottom:20px;
+  font-weight:700;font-size:.95rem;flex-wrap:wrap;gap:6px;
+}
+.topbar .stat{display:flex;gap:16px;align-items:center}
+.badge{background:var(--navy);color:var(--geel);border-radius:6px;padding:2px 10px}
+.geluidknop{background:var(--navy);color:var(--geel);border:none;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:1rem;font-family:inherit}
+.geluidknop:focus-visible{outline:3px solid var(--blauw);outline-offset:2px}
+
+.scherm{display:none;animation:fade .35s ease}
+.scherm.actief{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+
+.kaart{
+  background:var(--wit);border-radius:12px;padding:28px;
+  box-shadow:0 8px 30px rgba(0,0,0,.45);
+  border-top:6px solid var(--accent, var(--geel));
+  margin-bottom:20px;
+}
+.kaart h2{font-size:1.5rem;margin-bottom:10px}
+.kaart p{line-height:1.6;margin-bottom:12px}
+.eyebrow{
+  display:inline-block;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;
+  font-weight:700;color:var(--wit);background:var(--accent, var(--navy));
+  padding:3px 10px;border-radius:4px;margin-bottom:12px;
+}
+
+.hero{text-align:center;color:var(--wit);padding:30px 10px 24px}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);font-weight:900;color:var(--geel);margin-bottom:6px}
+.hero .sub{font-family:'Merriweather',Georgia,serif;font-style:italic;color:#c9d4f2;margin-bottom:12px}
+.hero p{max-width:600px;margin:0 auto 8px;line-height:1.6;color:#dfe4f2}
+
+/* Filmische scène */
+.bioscoop{position:relative;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.bioscoop .balk{height:34px;background:#000}
+.scene-houder{position:relative;line-height:0}
+.scene-houder svg{width:100%;height:auto;display:block}
+.scene-houder video{width:100%;display:block}
+.ondertitel{
+  position:absolute;left:0;right:0;bottom:44px;text-align:center;
+  color:#fff;font-size:clamp(.95rem,2.6vw,1.25rem);font-weight:600;
+  text-shadow:0 2px 8px rgba(0,0,0,.9);padding:0 20px;line-height:1.4;transition:opacity .5s;
+}
+.skipknop{
+  position:absolute;right:12px;bottom:8px;z-index:5;
+  background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4);
+  border-radius:6px;padding:6px 14px;font-family:inherit;font-weight:600;cursor:pointer;
+}
+.skipknop:hover{background:rgba(255,255,255,.3)}
+
+.tl-lamp{animation:zoemen 7s linear infinite}
+.tl-lamp.flikker{animation:flikker .8s steps(2) 4}
+@keyframes zoemen{0%,100%{opacity:.95}50%{opacity:.85}}
+@keyframes flikker{0%{opacity:1}25%{opacity:.15}50%{opacity:.9}75%{opacity:.1}100%{opacity:1}}
+.scene-shake{animation:shake .5s ease}
+@keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-6px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(3px,-1px)}}
+.led{animation:ledknipper 1.8s steps(2) infinite}
+.led:nth-child(2n){animation-delay:.6s}.led:nth-child(3n){animation-delay:1.1s}
+@keyframes ledknipper{0%,100%{opacity:1}50%{opacity:.25}}
+.deurpaneel{transform-origin:944px 330px;transition:transform 1s cubic-bezier(.7,0,.9,.4)}
+.deurpaneel.dicht{transform:rotate(0deg)}
+.deurpaneel.open{transform:skewX(-14deg) scaleX(.35)}
+.intro-zoom svg{animation:introzoom 11.5s ease forwards;transform-origin:center}
+@keyframes introzoom{from{transform:scale(1)}to{transform:scale(1.07)}}
+#alarmLicht{pointer-events:none;opacity:0}
+#alarmLicht.aan{animation:alarmpuls 1.1s ease-in-out infinite}
+@keyframes alarmpuls{0%,100%{opacity:0}50%{opacity:.22}}
+
+.hotspot{cursor:pointer;outline:none}
+.hotspot rect.vlak{fill:transparent;stroke:transparent;stroke-width:3;rx:8;transition:.15s}
+.hotspot:hover rect.vlak,.hotspot:focus-visible rect.vlak{fill:rgba(255,210,0,.12);stroke:var(--geel)}
+.hotspot .naamlabel{opacity:0;transition:.15s;font-family:'Open Sans',Arial,sans-serif;font-weight:700}
+.hotspot:hover .naamlabel,.hotspot:focus-visible .naamlabel{opacity:1}
+.hotspot.klaar rect.vlak{stroke:var(--teal);fill:rgba(36,167,147,.10)}
+.hotspot .vinkje{display:none}
+.hotspot.klaar .vinkje{display:block}
+.hotspot.uit{pointer-events:none}
+.hotspot:not(.klaar):not(.uit) rect.vlak{animation:hotpuls 2.8s ease-in-out infinite}
+@keyframes hotpuls{0%,100%{stroke:rgba(255,210,0,0)}50%{stroke:rgba(255,210,0,.5)}}
+
+.stations{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:16px}
+.station{
+  background:var(--wit);border-radius:12px;padding:16px;cursor:pointer;text-align:left;
+  border:none;border-left:6px solid var(--accent, var(--geel));
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+  transition:transform .12s;font-family:inherit;
+}
+.station:hover{transform:translateY(-3px)}
+.station:focus-visible{outline:3px solid var(--geel);outline-offset:2px}
+.station h3{font-size:1rem;margin:4px 0}
+.station p{font-size:.82rem;color:#3b4668;line-height:1.4}
+.station.klaar{border-left-color:var(--teal);opacity:.85}
+.station.klaar h3::after{content:" ✓";color:var(--teal)}
+.cijfer-onthuld{
+  display:inline-block;margin-top:8px;background:var(--lichtgeel);
+  border-radius:6px;padding:2px 10px;font-weight:700;font-size:.85rem;
+}
+
+.btn{
+  font-family:'Open Sans',Arial,sans-serif;font-weight:700;font-size:1rem;
+  background:var(--geel);color:var(--navy);border:none;border-radius:8px;
+  padding:12px 26px;cursor:pointer;transition:transform .1s,box-shadow .1s;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.btn:focus-visible{outline:3px solid var(--blauw);outline-offset:2px}
+.btn.klein{padding:8px 16px;font-size:.9rem}
+.btn.stil{background:#e8ebf3}
+.btn.gevaar{background:var(--roze);color:var(--wit)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+.stationnav{display:flex;gap:10px;justify-content:space-between;align-items:stretch;margin:0 0 18px;flex-wrap:wrap}
+.stationnav.onder{margin:20px 0 0;border-top:2px solid #e8ebf3;padding-top:16px}
+.stationnav .btn{flex:1;min-width:140px}
+.stationnav .btn.midden{background:var(--navy);color:var(--geel)}
+
+.stationscene{border-radius:10px;overflow:hidden;margin-bottom:16px;background:#0a1633;line-height:0;position:relative}
+.stationscene svg,.stationscene video{width:100%;height:auto;display:block}
+.vraagblok{background:#f4f6fb;border-radius:10px;padding:16px;margin-bottom:14px;border-left:5px solid var(--accent,#c6cddd)}
+.infoknop{
+  width:24px;height:24px;border-radius:50%;border:2px solid var(--accent,var(--blauw));
+  background:var(--wit);color:var(--accent,var(--blauw));
+  font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:.95rem;line-height:1;
+  cursor:pointer;margin-left:8px;vertical-align:middle;flex-shrink:0;padding:0;
+}
+.infoknop:hover,.infoknop[aria-expanded="true"]{background:var(--accent,var(--blauw));color:var(--wit)}
+.infoknop:focus-visible{outline:3px solid var(--blauw);outline-offset:2px}
+.uitleg{
+  display:none;background:var(--wit);border:1.5px solid var(--accent,#c6cddd);border-radius:8px;
+  padding:12px 14px;margin:10px 0 6px;font-size:.9rem;line-height:1.55;color:#2c3c66;font-weight:400;
+}
+.uitleg.open{display:block;animation:fade .25s ease}
+.uitleg strong{color:var(--navy)}
+.vraagblok label{font-weight:600;display:block;margin-bottom:6px}
+.vraagblok .casus{font-style:italic;color:#3b4668}
+select,input[type=number],input[type=text]{
+  font-family:inherit;font-size:1rem;padding:9px 12px;border-radius:8px;
+  border:2px solid #c6cddd;background:var(--wit);width:100%;max-width:340px;
+}
+select:focus,input:focus{outline:none;border-color:var(--blauw)}
+.rij{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* Uitlegknop (i) per vraag: gratis conceptuitleg voor wie niet weet waar te beginnen */
+.infoknop{
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--accent,var(--blauw));background:var(--wit);color:var(--accent,var(--blauw));
+  font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:.95rem;
+  cursor:pointer;margin-left:8px;vertical-align:-4px;line-height:1;padding:0;
+  transition:background .15s,color .15s;
+}
+.infoknop:hover,.infoknop[aria-expanded="true"]{background:var(--accent,var(--blauw));color:var(--wit)}
+.infoknop:focus-visible{outline:3px solid var(--blauw);outline-offset:2px}
+.uitleg{
+  display:none;background:var(--wit);border:1px solid #dfe4f0;border-left:4px solid var(--accent,var(--blauw));
+  border-radius:8px;padding:10px 14px;margin:8px 0 10px;
+  font-size:.9rem;line-height:1.55;color:#3b4668;font-weight:400;
+}
+.uitleg.open{display:block;animation:fade .25s ease}
+.formule{font-family:Georgia,'Times New Roman',serif;font-style:italic;background:var(--lichtgeel);border-radius:6px;padding:2px 8px;white-space:nowrap}
+table.uitvoer{border-collapse:collapse;font-size:.9rem;margin:8px 0 14px;width:100%;max-width:460px}
+table.uitvoer caption{text-align:left;font-size:.78rem;color:#3b4668;padding-bottom:4px;font-style:italic}
+table.uitvoer th,table.uitvoer td{border:1px solid #c6cddd;padding:6px 10px;text-align:right}
+table.uitvoer th{background:#e8ebf3;text-align:center}
+table.uitvoer td:first-child{text-align:left}
+
+/* Steekproefmachine */
+.machine{display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap;margin:6px 0 16px}
+.machine .paneel{text-align:center}
+.machine svg{width:230px;height:130px}
+#seCurve{transition:transform .5s ease;transform-origin:115px 110px}
+.stand{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums}
+.stip{opacity:0}
+.stip.zichtbaar{opacity:1;transition:opacity .3s}
+
+.feedback{border-radius:8px;padding:12px 16px;margin-top:12px;font-weight:600;display:none}
+.feedback.goed{display:block;background:#e2f5f1;color:#116353;border-left:5px solid var(--teal)}
+.feedback.fout{display:block;background:#fbe9f0;color:#7c0f3e;border-left:5px solid var(--roze);animation:schud .4s ease}
+.feedback.hint{display:block;background:var(--lichtgeel);color:var(--navy);border-left:5px solid var(--geel)}
+@keyframes schud{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.confetti{position:fixed;top:-14px;width:10px;height:14px;z-index:99;border-radius:2px;pointer-events:none;animation:confval 2.4s linear forwards}
+@keyframes confval{to{transform:translateY(105vh) rotate(var(--rx,360deg))}}
+
+.deurcode{display:flex;gap:8px;justify-content:center;margin:18px 0}
+.deurcode input{width:52px;max-width:52px;height:60px;text-align:center;font-size:1.6rem;font-weight:700}
+.eind{text-align:center}
+.score-groot{font-family:'Merriweather',serif;font-size:3rem;font-weight:900;color:var(--teal)}
+
+.voortgang{height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin-bottom:20px}
+.voortgang div{height:100%;background:var(--geel);width:0%;transition:width .4s}
+
+/* Stationskleuren (UU-secundair palet) */
+.s1{--accent:#5287C6}
+.s2{--accent:#24A793}
+.s3{--accent:#AA1555}
+.s4{--accent:#F3965E}
+.station h3::before{content:"";display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--accent,var(--geel));margin-right:7px}
+.station.klaar{border-left-color:var(--teal)}
+.cijfer-onthuld{border:2px solid var(--accent,var(--geel))}
+
+/* Codeslots: de vier cijfers, elk in de kleur van zijn station */
+.codeslots{display:inline-flex;gap:5px;vertical-align:middle}
+.codeslots .slot{
+  width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;font-weight:700;background:#233a7a;color:#8d97b8;
+}
+.codeslots .slot.vol{color:var(--navy);animation:slotpop .4s cubic-bezier(.2,1.6,.4,1)}
+.codeslots.groot .slot{width:44px;height:52px;border-radius:9px;font-size:1.5rem}
+@keyframes slotpop{from{transform:scale(.4)}to{transform:scale(1)}}
+
+/* Deurcode-vakjes in stationskleuren */
+.deurcode input:nth-child(1){border-color:#5287C6;border-width:3px}
+.deurcode input:nth-child(2){border-color:#24A793;border-width:3px}
+.deurcode input:nth-child(3){border-color:#AA1555;border-width:3px}
+.deurcode input:nth-child(4){border-color:#F3965E;border-width:3px}
+
+/* Beloningsoverlay na een opgelost station */
+.beloning{position:fixed;inset:0;background:rgba(0,8,31,.78);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.beloning[hidden]{display:none}
+.beloning-kaart{
+  background:var(--wit);border-radius:16px;padding:32px 30px 26px;text-align:center;max-width:460px;width:100%;
+  border-top:8px solid var(--accent,var(--geel));
+  box-shadow:0 18px 60px rgba(0,0,0,.6);
+  animation:pop .45s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes pop{from{transform:scale(.6) translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.beloning-kop{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--wit);background:var(--accent,var(--navy));display:inline-block;padding:3px 12px;border-radius:4px}
+.beloning-titel{font-family:'Merriweather',Georgia,serif;font-size:1.4rem;margin:12px 0 2px}
+.beloning-cijfer{
+  font-family:'Merriweather',Georgia,serif;font-size:4rem;font-weight:900;color:var(--accent,var(--navy));
+  width:108px;height:108px;border-radius:50%;border:6px solid var(--accent,var(--geel));
+  display:flex;align-items:center;justify-content:center;margin:16px auto 12px;
+  animation:cijferglans 1.4s ease-in-out infinite alternate;
+}
+@keyframes cijferglans{from{box-shadow:0 0 0 0 rgba(255,210,0,.0)}to{box-shadow:0 0 0 12px rgba(255,210,0,.18)}}
+.beloning-kaart p{line-height:1.55;margin-bottom:14px;color:#3b4668}
+.beloning-kaart .codeslots{margin-bottom:20px}
+
+@media (prefers-reduced-motion:reduce){
+  .beloning-kaart,.codeslots .slot.vol,.beloning-cijfer{animation:none}
+}
+
+footer{color:#8d97b8;font-size:.78rem;text-align:center;margin-top:30px;line-height:1.5}
+
+@media (prefers-reduced-motion:reduce){
+  .tl-lamp,.tl-lamp.flikker,.scene-shake,.led,.intro-zoom svg,#alarmLicht.aan,
+  .hotspot:not(.klaar):not(.uit) rect.vlak,.feedback.fout,.confetti,.scherm{animation:none}
+  .deurpaneel,#seCurve{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar" id="topbar" style="display:none">
+    <span>Kritiek Gebied</span>
+    <span class="stat">
+      <span>Score: <span class="badge" id="scoreWeergave">0</span></span>
+      <span>Cijfers: <span class="codeslots" id="cijfersWeergave"></span></span>
+      <button class="geluidknop" id="geluidKnop" onclick="wisselGeluid()" aria-label="Geluid aan of uit">🔊</button>
+    </span>
+  </div>
+  <div class="voortgang" id="voortgang" style="display:none"><div id="voortgangBalk"></div></div>
+
+  <!-- START -->
+  <section class="scherm actief" id="scherm-start">
+    <div class="hero">
+      <h1>Kritiek Gebied</h1>
+      <p class="sub">Verwerp H₀ en ontsnap uit het datalab.</p>
+      <p>Donderdagnacht, 23:58. Je zit als laatste in het datalab om je kwantitatieve eindopdracht af te ronden vóór de deadline van middernacht. Dan slaat de nachtvergrendeling toe…</p>
+    </div>
+    <div class="kaart">
+      <span class="eyebrow">Spelregels</span>
+      <p>• De ontgrendelcode bestaat uit vier cijfers. Elk cijfer volgt uit je <strong>eigen berekening</strong> aan een van de vier stations.<br>
+         • Elk station is 25 punten waard. Een hint kost 5 punten, elke foute poging 2 punten.<br>
+         • Statistische conventies: α = .05, toetsen tweezijdig tenzij anders vermeld. Rekenmachine toegestaan.</p>
+      <p style="font-size:.85rem;color:#3b4668">De opgaven sluiten aan op de leerlijn Onderzoeksmethoden en Statistiek (o.a. beschrijvende statistiek, steekproevenverdeling en standaardfout, nulhypothesetoetsing met de t-toets, en regressie), met Morling &amp; Carr en Field als naslag.</p>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn" onclick="startIntro()">Start het spel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTRO-CUTSCENE -->
+  <section class="scherm" id="scherm-intro">
+    <div class="bioscoop">
+      <div class="balk"></div>
+      <div class="scene-houder" id="introHouder"></div>
+      <div class="ondertitel" id="introTekst"></div>
+      <button class="skipknop" onclick="eindIntro()">Overslaan ≫</button>
+      <button class="skipknop" style="right:auto;left:12px" id="geluidKnopIntro" onclick="wisselGeluid()" aria-label="Geluid aan of uit">🔊</button>
+      <div class="balk"></div>
+    </div>
+  </section>
+
+  <!-- LAB OVERZICHT -->
+  <section class="scherm" id="scherm-lab">
+    <div class="kaart">
+      <span class="eyebrow">Het datalab</span>
+      <h2>Kijk om je heen</h2>
+      <p>Klik op een werkplek (of gebruik de lijst eronder). Elk opgelost station levert één cijfer van de ontgrendelcode op — en dat cijfer volgt steeds uit je eigen uitkomst.</p>
+      <div class="stationscene" id="labSceneHouder" style="background:#0a1633"></div>
+      <div class="stations">
+        <button class="station s1" id="st1" onclick="naarScherm('scherm-p1')">
+          <h3>1 · Whiteboard</h3>
+          <p>Beschrijvende statistiek en z-scores.</p>
+          <span class="cijfer-onthuld" style="display:none"></span>
+        </button>
+        <button class="station s2" id="st2" onclick="naarScherm('scherm-p2')">
+          <h3>2 · Steekproefmachine</h3>
+          <p>Standaardfout en steekproefomvang.</p>
+          <span class="cijfer-onthuld" style="display:none"></span>
+        </button>
+        <button class="station s3" id="st3" onclick="naarScherm('scherm-p3')">
+          <h3>3 · Toetsingsterminal</h3>
+          <p>Nulhypothesetoetsing met de t-toets.</p>
+          <span class="cijfer-onthuld" style="display:none"></span>
+        </button>
+        <button class="station s4" id="st4" onclick="naarScherm('scherm-p4')">
+          <h3>4 · Regressieconsole</h3>
+          <p>Correlatie, regressie en R².</p>
+          <span class="cijfer-onthuld" style="display:none"></span>
+        </button>
+      </div>
+    </div>
+    <div class="kaart" style="text-align:center" id="deurKaart">
+      <span class="eyebrow">Nachtvergrendeling</span>
+      <h2>De deur</h2>
+      <p id="deurTekst">Het paneel vraagt vier cijfers. Je hebt ze nog niet allemaal…</p>
+      <div class="deurcode">
+        <input type="text" inputmode="numeric" maxlength="1" aria-label="cijfer 1">
+        <input type="text" inputmode="numeric" maxlength="1" aria-label="cijfer 2">
+        <input type="text" inputmode="numeric" maxlength="1" aria-label="cijfer 3">
+        <input type="text" inputmode="numeric" maxlength="1" aria-label="cijfer 4">
+      </div>
+      <button class="btn" onclick="probeerDeur()">Ontgrendel de deur</button>
+      <p style="font-size:.82rem;color:#3b4668;margin-top:10px">Elke kleur hoort bij een station: <span style="color:#5287C6;font-weight:700">1 · Whiteboard</span> · <span style="color:#24A793;font-weight:700">2 · Steekproefmachine</span> · <span style="color:#AA1555;font-weight:700">3 · Toetsingsterminal</span> · <span style="color:#F3965E;font-weight:700">4 · Regressieconsole</span></p>
+      <div class="feedback" id="fbDeur"></div>
+    </div>
+  </section>
+
+  <!-- STATION 1: WHITEBOARD -->
+  <section class="scherm s1" id="scherm-p1">
+    <div class="kaart">
+      <span class="eyebrow">Station 1 · Whiteboard</span>
+      <div class="stationscene" data-video="videos/station1.mp4">
+        <svg viewBox="0 0 800 190" role="img" aria-label="Whiteboard met formules en een normaalverdeling">
+          <defs>
+            <linearGradient id="b1w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d3d6c"/><stop offset="1" stop-color="#1c2952"/></linearGradient>
+            <linearGradient id="b1b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="1" stop-color="#e4e9f2"/></linearGradient>
+            <filter id="b1z" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+          </defs>
+          <rect width="800" height="190" fill="url(#b1w)"/>
+          <ellipse cx="400" cy="176" rx="340" ry="8" fill="#000814" opacity=".3" filter="url(#b1z)"/>
+          <rect x="70" y="14" width="660" height="140" rx="9" fill="url(#b1b)" stroke="#8fa3c8" stroke-width="3"/>
+          <rect x="76" y="20" width="648" height="10" rx="4" fill="#ffffff" opacity=".55"/>
+          <text x="108" y="66" font-size="26" font-family="Georgia, serif" font-style="italic" fill="#2c3c66">z = (x − M) / SD</text>
+          <text x="108" y="112" font-size="17" font-family="Open Sans, Arial" fill="#5a6a92">M = 6,4&#160;&#160;&#160;SD = 0,8&#160;&#160;&#160;n = 214</text>
+          <line x1="450" y1="132" x2="646" y2="132" stroke="#8fa3c8" stroke-width="2"/>
+          <path d="M470 132 C500 132 505 52 540 52 C575 52 580 132 610 132" fill="none" stroke="#7e9cc9" stroke-width="3"/>
+          <path d="M598 86 C604 102 608 120 610 132 L580 132 C588 118 594 102 598 86 Z" fill="#c48ba1" opacity=".85"/>
+          <rect x="310" y="154" width="190" height="8" rx="4" fill="#8fa3c8"/>
+          <rect x="326" y="148" width="20" height="6" rx="2" fill="#c48ba1"/>
+          <rect x="354" y="148" width="20" height="6" rx="2" fill="#7e9cc9"/>
+          <rect x="382" y="148" width="20" height="6" rx="2" fill="#6fbfae"/>
+          <rect x="440" y="147" width="34" height="8" rx="3" fill="#5a6a92"/>
+        </svg>
+      </div>
+      <h2>De achtergebleven tentamendata</h2>
+      <p class="casus" style="font-style:italic;color:#3b4668">Op het whiteboard staan de resultaten van het laatste statistiektentamen: de cijfers zijn bij benadering normaal verdeeld met M = 6,4 en SD = 0,8 (n = 214). Eén student haalde een 8,0.</p>
+      <div class="vraagblok">
+        <label for="p1z">a. Bereken de z-score van deze student (1 decimaal):</label>
+        <input type="number" id="p1z" step="0.1" placeholder="bijv. 1,3">
+      </div>
+      <div class="vraagblok">
+        <label>b. De docent merkt op dat de cijferverdeling van een eerder tentamen rechts-scheef was. Wat geldt dan doorgaans?</label>
+        <select id="p1b">
+          <option value="">— kies —</option>
+          <option>Het gemiddelde ligt hoger dan de mediaan</option>
+          <option>Het gemiddelde ligt lager dan de mediaan</option>
+          <option>Gemiddelde en mediaan zijn per definitie gelijk</option>
+          <option>De modus ligt altijd tussen gemiddelde en mediaan</option>
+        </select>
+      </div>
+      <div class="vraagblok">
+        <label>c. Welke centrummaat is het minst gevoelig voor uitschieters?</label>
+        <select id="p1c">
+          <option value="">— kies —</option>
+          <option>Het gemiddelde</option>
+          <option>De mediaan</option>
+          <option>De variantie</option>
+          <option>De standaardafwijking</option>
+        </select>
+      </div>
+      <div class="rij">
+        <button class="btn" onclick="checkP1()">Controleer</button>
+        <button class="btn klein stil" onclick="hint(1)">Hint (−5)</button>
+      </div>
+      <div class="feedback" id="fb1"></div>
+    </div>
+  </section>
+
+  <!-- STATION 2: STEEKPROEFMACHINE -->
+  <section class="scherm s2" id="scherm-p2">
+    <div class="kaart">
+      <span class="eyebrow">Station 2 · Steekproefmachine</span>
+      <div class="stationscene" data-video="videos/station2.mp4">
+        <svg viewBox="0 0 800 190" role="img" aria-label="De steekproefmachine met dossier en steekproevenverdeling">
+          <defs>
+            <linearGradient id="b2w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d3d6c"/><stop offset="1" stop-color="#1c2952"/></linearGradient>
+            <linearGradient id="b2k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#233459"/><stop offset="1" stop-color="#141e3d"/></linearGradient>
+            <linearGradient id="b2s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2f5e"/><stop offset="1" stop-color="#0e1b3e"/></linearGradient>
+            <filter id="b2z" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+          </defs>
+          <rect width="800" height="190" fill="url(#b2w)"/>
+          <ellipse cx="420" cy="176" rx="330" ry="8" fill="#000814" opacity=".3" filter="url(#b2z)"/>
+          <rect x="310" y="14" width="220" height="156" rx="12" fill="url(#b2k)" stroke="#6fbfae" stroke-width="3"/>
+          <rect x="330" y="32" width="180" height="66" rx="6" fill="url(#b2s)" stroke="#3d5a8c" stroke-width="1.5"/>
+          <line x1="420" y1="44" x2="420" y2="90" stroke="#56679a" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <path d="M344 90 C376 90 382 46 420 46 C458 46 464 90 496 90" fill="none" stroke="#a9c2e6" stroke-width="2.5"/>
+          <circle cx="352" cy="126" r="8" fill="#e8c877"/>
+          <circle cx="382" cy="126" r="8" fill="#6fbfae"/>
+          <circle cx="412" cy="126" r="8" fill="#7e9cc9"/>
+          <circle cx="474" cy="126" r="14" fill="#101d40" stroke="#8fa3c8" stroke-width="2"/>
+          <line x1="474" y1="126" x2="483" y2="116" stroke="#8fa3c8" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="330" y="146" width="180" height="14" rx="4" fill="#22325c"/>
+          <text x="420" y="157" text-anchor="middle" fill="#9fb0d8" font-size="11" font-family="monospace">SE = σ / √n</text>
+          <g transform="translate(170,52)">
+            <rect x="4" y="6" width="86" height="112" rx="5" fill="#000814" opacity=".25" filter="url(#b2z)"/>
+            <rect width="86" height="112" rx="5" fill="#f4f7fb" stroke="#8fa3c8" stroke-width="2"/>
+            <rect x="28" y="-7" width="30" height="14" rx="4" fill="#8fa3c8"/>
+            <text x="43" y="34" text-anchor="middle" font-size="16" font-family="Georgia, serif" font-style="italic" fill="#2c3c66">n = ?</text>
+            <line x1="14" y1="52" x2="72" y2="52" stroke="#b8c4dc" stroke-width="3"/>
+            <line x1="14" y1="68" x2="72" y2="68" stroke="#b8c4dc" stroke-width="3"/>
+            <line x1="14" y1="84" x2="56" y2="84" stroke="#b8c4dc" stroke-width="3"/>
+          </g>
+          <text x="590" y="98" text-anchor="middle" fill="#7f92bd" font-size="14" font-family="Open Sans, Arial">σ = 12 · eis: SE ≤ 1,5</text>
+        </svg>
+      </div>
+      <h2>Ontwerp de steekproef</h2>
+      <p class="casus" style="font-style:italic;color:#3b4668">In de machine zit een subsidieaanvraag vast. De opdracht: ontwerp een steekproef voor een welzijnsonderzoek. De populatiestandaardafwijking is bekend: σ = 12. De subsidieverstrekker eist een standaardfout van hoogstens 1,5 — met de <strong>kleinst mogelijke</strong> steekproef, want elke deelnemer kost geld. Het budget dekt maximaal 70 deelnemers.</p>
+      <p id="p2opdracht">Gebruik <span class="formule">SE = σ / √n</span>. Voeg deelnemers toe en let op hoe de steekproevenverdeling van het gemiddelde smaller wordt. Overschrijd je het budget, dan vervalt de aanvraag en begin je opnieuw.</p>
+      <div class="vraagblok">
+        <label id="mchOpdracht">Opdracht: vind met de knoppen de kleinste steekproefomvang n waarvoor SE ≤ 1,5, en dien dan het steekproefplan in.</label>
+      </div>
+      <div class="machine">
+        <div class="paneel">
+          <svg viewBox="0 0 230 130" aria-hidden="true">
+            <line x1="10" y1="110" x2="220" y2="110" stroke="#9aa3ba" stroke-width="2"/>
+            <path id="seCurve" d="M15 110 C60 110 70 20 115 20 C160 20 170 110 215 110" fill="rgba(126,156,201,.28)" stroke="#7e9cc9" stroke-width="3"/>
+            <line x1="115" y1="20" x2="115" y2="110" stroke="#8fa3c8" stroke-width="1.5" stroke-dasharray="4 4"/>
+          </svg>
+          <div style="font-size:.8rem;color:#3b4668">steekproevenverdeling van het gemiddelde</div>
+        </div>
+        <div class="paneel">
+          <div class="stand">n = <span id="mchN">0</span></div>
+          <div class="stand" style="color:#5287C6">SE = <span id="mchSE">—</span></div>
+          <div id="mchStatus" style="font-size:.85rem;color:#3b4668;min-height:2.6em;max-width:220px">nog geen deelnemers geworven</div>
+        </div>
+      </div>
+      <div class="rij" style="justify-content:center">
+        <button class="btn klein" onclick="werf(25)">+ 25 deelnemers</button>
+        <button class="btn klein" onclick="werf(10)">+ 10</button>
+        <button class="btn klein" onclick="werf(5)">+ 5</button>
+        <button class="btn klein" onclick="werf(1)">+ 1</button>
+        <button class="btn klein gevaar" onclick="mchReset(true)">Opnieuw</button>
+      </div>
+      <div class="rij" style="margin-top:14px">
+        <button class="btn" id="mchKlaar" onclick="checkP2()" disabled>Dien het steekproefplan in</button>
+        <button class="btn klein stil" onclick="hint(2)">Hint (−5)</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+  </section>
+
+  <!-- STATION 3: TOETSINGSTERMINAL -->
+  <section class="scherm s3" id="scherm-p3">
+    <div class="kaart">
+      <span class="eyebrow">Station 3 · Toetsingsterminal</span>
+      <div class="stationscene" data-video="videos/station3.mp4">
+        <svg viewBox="0 0 800 190" role="img" aria-label="Monitor met t-verdeling en gemarkeerd kritiek gebied">
+          <defs>
+            <linearGradient id="b3w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d3d6c"/><stop offset="1" stop-color="#1c2952"/></linearGradient>
+            <linearGradient id="b3s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2f5e"/><stop offset="1" stop-color="#0e1b3e"/></linearGradient>
+            <filter id="b3z" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+          </defs>
+          <rect width="800" height="190" fill="url(#b3w)"/>
+          <rect y="148" width="800" height="42" fill="#22315b"/>
+          <rect y="148" width="800" height="4" fill="#3c4c7c" opacity=".7"/>
+          <ellipse cx="400" cy="152" rx="250" ry="7" fill="#000814" opacity=".3" filter="url(#b3z)"/>
+          <rect x="220" y="14" width="360" height="112" rx="10" fill="url(#b3s)" stroke="#c48ba1" stroke-width="3"/>
+          <polygon points="220,14 330,14 260,126 220,126" fill="#ffffff" opacity=".05"/>
+          <line x1="256" y1="102" x2="544" y2="102" stroke="#56679a" stroke-width="2"/>
+          <path d="M260 102 C320 102 336 34 400 34 C464 34 480 102 540 102" fill="none" stroke="#b9c6e4" stroke-width="3"/>
+          <path d="M260 102 L290 102 C280 95 272 86 266 78 C264 86 261 95 260 102 Z" fill="#c48ba1"/>
+          <path d="M540 102 L510 102 C520 95 528 86 534 78 C536 86 539 95 540 102 Z" fill="#c48ba1"/>
+          <text x="282" y="118" text-anchor="middle" fill="#d9a7bd" font-size="11" font-family="Open Sans, Arial">kritiek gebied</text>
+          <text x="518" y="118" text-anchor="middle" fill="#d9a7bd" font-size="11" font-family="Open Sans, Arial">kritiek gebied</text>
+          <rect x="382" y="126" width="36" height="14" fill="#2c3a63"/>
+          <rect x="356" y="140" width="88" height="7" rx="3" fill="#2c3a63"/>
+          <rect x="330" y="156" width="140" height="10" rx="4" fill="#2a3a67"/>
+          <g>
+            <rect x="606" y="128" width="20" height="22" rx="3" fill="#c48ba1"/>
+            <path d="M626 132 q10 6 0 13" fill="none" stroke="#c48ba1" stroke-width="3"/>
+          </g>
+          <text x="400" y="182" text-anchor="middle" fill="#8fa0c9" font-size="13" font-family="Open Sans, Arial">t-verdeling, df = 35 · α = .05, tweezijdig · t-kritiek = ±2,030</text>
+        </svg>
+      </div>
+      <h2>Verwerp H₀ — of niet?</h2>
+      <p class="casus" style="font-style:italic;color:#3b4668">Op de terminal staat een onderzoek naar een studievaardigheidstraining. Vraag: scoren getrainde studenten anders dan het landelijke gemiddelde (μ₀ = 100)? Steekproef: n = 36, M = 104,5, s = 12. H₀: μ = 100, H₁: μ ≠ 100, α = .05 (t-kritiek bij df = 35 is ±2,030).</p>
+      <div class="vraagblok">
+        <label for="p3t">a. Bereken de toetsingsgrootheid <span class="formule">t = (M − μ₀) / (s / √n)</span> (2 decimalen):</label>
+        <input type="number" id="p3t" step="0.01" placeholder="bijv. 1,96">
+      </div>
+      <div class="vraagblok">
+        <label>b. Wat is de juiste statistische beslissing?</label>
+        <select id="p3b">
+          <option value="">— kies —</option>
+          <option>H₀ verwerpen: de t-waarde valt in het kritieke gebied</option>
+          <option>H₀ niet verwerpen: de t-waarde valt buiten het kritieke gebied</option>
+          <option>H₀ accepteren: het verschil is bewezen afwezig</option>
+          <option>H₁ verwerpen: de p-waarde is groter dan α</option>
+        </select>
+      </div>
+      <div class="vraagblok">
+        <label>c. Wat betekent de p-waarde bij deze toets precies?</label>
+        <select id="p3c">
+          <option value="">— kies —</option>
+          <option>De kans dat H₀ waar is</option>
+          <option>De kans op dit resultaat of extremer, als H₀ waar is</option>
+          <option>De kans dat het gevonden verschil op toeval berust</option>
+          <option>De kans dat een replicatie hetzelfde resultaat oplevert</option>
+        </select>
+      </div>
+      <div class="vraagblok">
+        <label>d. Stel dat H₀ in werkelijkheid waar is. Hoe groot is dan de kans op een type I-fout bij deze toets?</label>
+        <select id="p3d">
+          <option value="">— kies —</option>
+          <option>5%</option>
+          <option>80%</option>
+          <option>95%</option>
+          <option>Dat hangt af van de steekproefomvang</option>
+        </select>
+      </div>
+      <div class="rij">
+        <button class="btn" onclick="checkP3()">Controleer</button>
+        <button class="btn klein stil" onclick="hint(3)">Hint (−5)</button>
+      </div>
+      <div class="feedback" id="fb3"></div>
+    </div>
+  </section>
+
+  <!-- STATION 4: REGRESSIECONSOLE -->
+  <section class="scherm s4" id="scherm-p4">
+    <div class="kaart">
+      <span class="eyebrow">Station 4 · Regressieconsole</span>
+      <div class="stationscene" data-video="videos/station4.mp4">
+        <svg viewBox="0 0 800 190" role="img" aria-label="Monitor met puntenwolk en regressielijn">
+          <defs>
+            <linearGradient id="b4w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d3d6c"/><stop offset="1" stop-color="#1c2952"/></linearGradient>
+            <linearGradient id="b4s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2f5e"/><stop offset="1" stop-color="#0e1b3e"/></linearGradient>
+            <filter id="b4z" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+          </defs>
+          <rect width="800" height="190" fill="url(#b4w)"/>
+          <rect y="148" width="800" height="42" fill="#22315b"/>
+          <rect y="148" width="800" height="4" fill="#3c4c7c" opacity=".7"/>
+          <ellipse cx="400" cy="152" rx="250" ry="7" fill="#000814" opacity=".3" filter="url(#b4z)"/>
+          <rect x="220" y="14" width="360" height="112" rx="10" fill="url(#b4s)" stroke="#e0a97e" stroke-width="3"/>
+          <polygon points="220,14 330,14 260,126 220,126" fill="#ffffff" opacity=".05"/>
+          <line x1="256" y1="106" x2="470" y2="106" stroke="#56679a" stroke-width="2"/>
+          <line x1="256" y1="106" x2="256" y2="32" stroke="#56679a" stroke-width="2"/>
+          <g fill="#e8c877">
+            <circle cx="278" cy="94" r="4"/><circle cx="298" cy="98" r="4"/><circle cx="314" cy="82" r="4"/>
+            <circle cx="334" cy="86" r="4"/><circle cx="352" cy="72" r="4"/><circle cx="370" cy="78" r="4"/>
+            <circle cx="390" cy="60" r="4"/><circle cx="410" cy="66" r="4"/><circle cx="428" cy="50" r="4"/>
+            <circle cx="448" cy="55" r="4"/><circle cx="462" cy="40" r="4"/>
+          </g>
+          <line x1="264" y1="100" x2="466" y2="38" stroke="#6fbfae" stroke-width="3"/>
+          <g>
+            <rect x="486" y="30" width="80" height="58" rx="4" fill="#16264d" stroke="#56679a" stroke-width="1.5"/>
+            <line x1="494" y1="44" x2="558" y2="44" stroke="#7f92bd" stroke-width="3"/>
+            <line x1="494" y1="58" x2="558" y2="58" stroke="#3c4c7c" stroke-width="3"/>
+            <line x1="494" y1="72" x2="540" y2="72" stroke="#3c4c7c" stroke-width="3"/>
+          </g>
+          <rect x="382" y="126" width="36" height="14" fill="#2c3a63"/>
+          <rect x="356" y="140" width="88" height="7" rx="3" fill="#2c3a63"/>
+          <rect x="330" y="156" width="140" height="10" rx="4" fill="#2a3a67"/>
+          <text x="400" y="182" text-anchor="middle" fill="#8fa0c9" font-size="13" font-family="Open Sans, Arial">ŷ = b₀ + b₁·x · kleinste-kwadratencriterium</text>
+        </svg>
+      </div>
+      <h2>De laatste SPSS-uitvoer</h2>
+      <p class="casus" style="font-style:italic;color:#3b4668">Op het tweede beeldscherm staat de uitvoer van een enkelvoudige regressie: voorspelt het aantal uren sport per week (X) de welzijnsscore (Y, schaal 0–50) van studenten?</p>
+      <table class="uitvoer">
+        <caption>Model Summary &amp; Coefficients (SPSS-uitvoer, ingekort)</caption>
+        <tr><th></th><th>B</th><th>R</th><th>R Square</th></tr>
+        <tr><td>(Constant)</td><td>20,5</td><td rowspan="2" style="text-align:center;vertical-align:middle">0,60</td><td rowspan="2" style="text-align:center;vertical-align:middle">0,36</td></tr>
+        <tr><td>Uren sport</td><td>1,8</td></tr>
+      </table>
+      <div class="vraagblok">
+        <label for="p4y">a. Voorspel met de regressievergelijking de welzijnsscore van een student die 5 uur per week sport (1 decimaal):</label>
+        <input type="number" id="p4y" step="0.1" placeholder="bijv. 31,5">
+      </div>
+      <div class="vraagblok">
+        <label>b. Wat betekent R Square = 0,36 hier?</label>
+        <select id="p4b">
+          <option value="">— kies —</option>
+          <option>36% van de variantie in welzijn wordt verklaard door het model</option>
+          <option>De correlatie tussen sport en welzijn is 0,36</option>
+          <option>De voorspelling zit er gemiddeld 36% naast</option>
+          <option>36% van de studenten wordt correct voorspeld</option>
+        </select>
+      </div>
+      <div class="vraagblok">
+        <label>c. Wat is een residu in dit model?</label>
+        <select id="p4c">
+          <option value="">— kies —</option>
+          <option>Het verschil tussen de geobserveerde en de voorspelde welzijnsscore</option>
+          <option>Het verschil tussen de hoogste en de laagste welzijnsscore</option>
+          <option>De helling van de regressielijn</option>
+          <option>De afstand tussen twee opeenvolgende datapunten</option>
+        </select>
+      </div>
+      <div class="rij">
+        <button class="btn" onclick="checkP4()">Controleer</button>
+        <button class="btn klein stil" onclick="hint(4)">Hint (−5)</button>
+      </div>
+      <div class="feedback" id="fb4"></div>
+    </div>
+  </section>
+
+  <!-- EINDE -->
+  <section class="scherm" id="scherm-eind">
+    <div class="kaart eind">
+      <span class="eyebrow">Ontsnapt</span>
+      <h2>De nachtvergrendeling schuift open</h2>
+      <p>Je t-waarde lag diep in het kritieke gebied: H₀ ("ik kom hier nooit meer uit") is overtuigend verworpen.</p>
+      <div class="score-groot" id="eindScore">0</div>
+      <p>van de 100 punten</p>
+      <p id="eindOordeel" style="font-weight:600"></p>
+      <button class="btn" onclick="location.reload()">Speel opnieuw</button>
+    </div>
+  </section>
+
+  <footer>
+    Kritiek Gebied · educatief statistiekspel op bachelor-niveau · werkt volledig offline in de browser, er worden geen gegevens verzameld of verzonden.<br>
+    Regelgebaseerd spel zonder AI-component. Inhoud sluit aan op de leerlijn Onderzoeksmethoden en Statistiek (naslag: Morling &amp; Carr, 2022; Field, 2018).
+  </footer>
+</div>
+
+<!-- Beloningsscherm na een opgelost station -->
+<div id="beloning" class="beloning" hidden role="dialog" aria-modal="true" aria-labelledby="belTitel">
+  <div class="beloning-kaart">
+    <span class="beloning-kop" id="belKop">Station opgelost</span>
+    <div class="beloning-titel" id="belTitel">Cijfer verdiend!</div>
+    <div class="beloning-cijfer" id="belCijfer">?</div>
+    <p id="belTekst"></p>
+    <div class="codeslots groot" id="belSlots" aria-label="Verzamelde codecijfers"></div>
+    <div class="rij" style="justify-content:center">
+      <button class="btn" id="belVolgende">Volgende station →</button>
+      <button class="btn klein stil" onclick="sluitBeloning()">Blijf hier</button>
+    </div>
+  </div>
+</div>
+
+<!-- Herbruikbare datalab-scène -->
+<template id="labSceneTemplate">
+  <svg viewBox="0 0 1000 420" role="img" aria-label="Overzicht van het datalab" id="labScene">
+    <defs>
+      <linearGradient id="muurG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d3d6c"/><stop offset="1" stop-color="#1a2750"/></linearGradient>
+      <linearGradient id="vloerG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16224b"/><stop offset="1" stop-color="#0b1331"/></linearGradient>
+      <linearGradient id="schermG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2f5e"/><stop offset="1" stop-color="#0e1b3e"/></linearGradient>
+      <linearGradient id="bankG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a67"/><stop offset="1" stop-color="#1c2a51"/></linearGradient>
+      <linearGradient id="kastG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#233459"/><stop offset="1" stop-color="#151f3f"/></linearGradient>
+      <linearGradient id="deurG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#31406b"/><stop offset="1" stop-color="#232f52"/></linearGradient>
+      <linearGradient id="bordG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f9fc"/><stop offset="1" stop-color="#e3e8f2"/></linearGradient>
+      <radialGradient id="gloedG"><stop offset="0" stop-color="#fff3d0" stop-opacity=".3"/><stop offset="1" stop-color="#fff3d0" stop-opacity="0"/></radialGradient>
+      <radialGradient id="vignetG" cx=".5" cy=".42" r=".8"><stop offset=".55" stop-color="#000814" stop-opacity="0"/><stop offset="1" stop-color="#000814" stop-opacity=".4"/></radialGradient>
+      <filter id="zachtF" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+    </defs>
+
+    <!-- muur en vloer -->
+    <rect width="1000" height="420" fill="url(#muurG)"/>
+    <g stroke="#3c4c7c" stroke-width="1.5" opacity=".4">
+      <line x1="0" y1="80" x2="1000" y2="80"/><line x1="0" y1="140" x2="1000" y2="140"/><line x1="0" y1="200" x2="1000" y2="200"/>
+      <line x1="125" y1="0" x2="125" y2="260"/><line x1="250" y1="0" x2="250" y2="260"/><line x1="375" y1="0" x2="375" y2="260"/><line x1="500" y1="0" x2="500" y2="260"/><line x1="625" y1="0" x2="625" y2="260"/><line x1="750" y1="0" x2="750" y2="260"/><line x1="875" y1="0" x2="875" y2="260"/>
+    </g>
+    <rect y="260" width="1000" height="160" fill="url(#vloerG)"/>
+    <rect y="257" width="1000" height="5" fill="#0a1230" opacity=".6"/>
+    <g stroke="#1c2950" stroke-width="1.5" opacity=".7"><line x1="0" y1="310" x2="1000" y2="310"/><line x1="0" y1="362" x2="1000" y2="362"/></g>
+
+    <!-- tl-balken met warme lichtgloed -->
+    <g id="lampen">
+      <g class="tl-lamp"><ellipse cx="230" cy="78" rx="165" ry="58" fill="url(#gloedG)"/><rect x="120" y="14" width="220" height="12" rx="6" fill="#fdf2d2"/></g>
+      <g class="tl-lamp"><ellipse cx="530" cy="78" rx="165" ry="58" fill="url(#gloedG)"/><rect x="420" y="14" width="220" height="12" rx="6" fill="#fdf2d2"/></g>
+      <g class="tl-lamp"><ellipse cx="810" cy="78" rx="135" ry="52" fill="url(#gloedG)"/><rect x="720" y="14" width="180" height="12" rx="6" fill="#fdf2d2"/></g>
+    </g>
+
+    <g id="wandklok" transform="translate(560,54)">
+      <rect x="-36" y="-17" width="72" height="34" rx="6" fill="#0c1738" stroke="#46567f" stroke-width="2"/>
+      <text id="klokTekst" y="7" text-anchor="middle" fill="#8fe0c8" font-size="17" font-family="monospace">23:58</text>
+    </g>
+
+    <!-- werkbank met slagschaduw en lichtrand -->
+    <ellipse cx="450" cy="330" rx="440" ry="13" fill="#000814" opacity=".35" filter="url(#zachtF)"/>
+    <rect x="20" y="250" width="860" height="16" rx="5" fill="#2e3d68"/>
+    <rect x="20" y="250" width="860" height="5" rx="2.5" fill="#4a5f95" opacity=".7"/>
+    <rect x="30" y="266" width="840" height="60" fill="url(#bankG)"/>
+
+    <!-- decor: plant -->
+    <g aria-hidden="true">
+      <ellipse cx="80" cy="398" rx="34" ry="7" fill="#000814" opacity=".3" filter="url(#zachtF)"/>
+      <path d="M80 356 C70 330 52 322 46 300 C66 310 74 328 78 344 C76 318 68 300 72 282 C84 298 86 324 84 348 C90 326 100 312 114 304 C106 324 94 338 86 356 Z" fill="#4f8a7c"/>
+      <path d="M64 396 h32 l5 -38 h-42 z" fill="#31406b"/>
+      <rect x="60" y="352" width="40" height="8" rx="3" fill="#3a4a78"/>
+    </g>
+
+    <!-- decor: bureaustoel -->
+    <g aria-hidden="true">
+      <ellipse cx="470" cy="402" rx="42" ry="7" fill="#000814" opacity=".3" filter="url(#zachtF)"/>
+      <rect x="446" y="322" width="48" height="46" rx="10" fill="#1e2c55" stroke="#46567f" stroke-width="2"/>
+      <rect x="444" y="364" width="52" height="10" rx="5" fill="#2a3a67"/>
+      <rect x="467" y="374" width="6" height="18" fill="#46567f"/>
+      <path d="M456 390 L484 402 M484 390 L456 402" stroke="#46567f" stroke-width="4" stroke-linecap="round"/>
+    </g>
+
+    <!-- STATION 1: whiteboard -->
+    <g class="hotspot" id="hs1" tabindex="0" role="button" aria-label="Station 1: whiteboard">
+      <rect x="46" y="210" width="140" height="9" rx="4" fill="#000814" opacity=".25" filter="url(#zachtF)"/>
+      <rect x="40" y="96" width="150" height="110" rx="6" fill="url(#bordG)" stroke="#8fa3c8" stroke-width="2.5"/>
+      <text x="56" y="130" font-size="15" font-family="Georgia, serif" font-style="italic" fill="#2c3c66">z = (x−M)/SD</text>
+      <line x1="66" y1="190" x2="166" y2="190" stroke="#8fa3c8" stroke-width="1.5"/>
+      <path d="M70 190 C90 190 92 150 115 150 C138 150 140 190 160 190" fill="none" stroke="#7e9cc9" stroke-width="2.5"/>
+      <path d="M152 172 C156 180 158 186 160 190 L146 190 C149 184 151 178 152 172 Z" fill="#c48ba1"/>
+      <rect x="52" y="206" width="126" height="7" rx="3" fill="#8fa3c8"/>
+      <rect x="62" y="201" width="16" height="5" rx="2" fill="#c48ba1"/>
+      <rect x="84" y="201" width="16" height="5" rx="2" fill="#7e9cc9"/>
+      <rect x="106" y="201" width="16" height="5" rx="2" fill="#6fbfae"/>
+      <rect class="vlak" x="32" y="88" width="166" height="134"/>
+      <text class="naamlabel" x="115" y="82" text-anchor="middle" fill="#a9c2e6" font-size="15">1 · Whiteboard</text>
+      <g class="vinkje" transform="translate(178,104)"><circle r="13" fill="#24A793"/><text y="5" text-anchor="middle" fill="#fff" font-size="15" font-weight="bold">✓</text></g>
+    </g>
+
+    <!-- STATION 2: steekproefmachine -->
+    <g class="hotspot" id="hs2" tabindex="0" role="button" aria-label="Station 2: steekproefmachine">
+      <ellipse cx="303" cy="270" rx="80" ry="8" fill="#000814" opacity=".3" filter="url(#zachtF)"/>
+      <rect x="228" y="120" width="150" height="146" rx="10" fill="url(#kastG)" stroke="#6fbfae" stroke-width="2.5"/>
+      <rect x="244" y="140" width="118" height="52" rx="5" fill="url(#schermG)" stroke="#3d5a8c" stroke-width="1.5"/>
+      <line x1="303" y1="150" x2="303" y2="186" stroke="#56679a" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <path d="M252 186 C270 186 274 150 303 150 C332 150 336 186 354 186" fill="none" stroke="#a9c2e6" stroke-width="2.5"/>
+      <circle cx="262" cy="214" r="7" fill="#e8c877"/>
+      <circle cx="288" cy="214" r="7" fill="#6fbfae"/>
+      <circle cx="314" cy="214" r="7" fill="#7e9cc9"/>
+      <circle cx="348" cy="214" r="11" fill="#101d40" stroke="#8fa3c8" stroke-width="2"/>
+      <line x1="348" y1="214" x2="355" y2="206" stroke="#8fa3c8" stroke-width="2" stroke-linecap="round"/>
+      <rect x="248" y="234" width="110" height="14" rx="4" fill="#22325c"/>
+      <text x="303" y="244" text-anchor="middle" fill="#9fb0d8" font-size="9" font-family="monospace">SE = σ/√n</text>
+      <rect class="vlak" x="220" y="112" width="166" height="162"/>
+      <text class="naamlabel" x="303" y="106" text-anchor="middle" fill="#7fd0bd" font-size="15">2 · Steekproefmachine</text>
+      <g class="vinkje" transform="translate(366,128)"><circle r="13" fill="#24A793"/><text y="5" text-anchor="middle" fill="#fff" font-size="15" font-weight="bold">✓</text></g>
+    </g>
+
+    <!-- serverrack (decoratief) -->
+    <g aria-hidden="true">
+      <ellipse cx="444" cy="270" rx="38" ry="7" fill="#000814" opacity=".3" filter="url(#zachtF)"/>
+      <rect x="412" y="110" width="64" height="156" rx="6" fill="url(#kastG)" stroke="#46567f" stroke-width="2"/>
+      <g fill="#7fd6c2">
+        <circle class="led" cx="426" cy="128" r="3"/><circle class="led" cx="426" cy="150" r="3"/>
+        <circle class="led" cx="426" cy="172" r="3" fill="#e8c877"/><circle class="led" cx="426" cy="194" r="3"/>
+        <circle class="led" cx="426" cy="216" r="3" fill="#e8c877"/><circle class="led" cx="426" cy="238" r="3"/>
+      </g>
+      <g stroke="#2c3a63" stroke-width="3"><line x1="438" y1="128" x2="466" y2="128"/><line x1="438" y1="150" x2="466" y2="150"/><line x1="438" y1="172" x2="466" y2="172"/><line x1="438" y1="194" x2="466" y2="194"/><line x1="438" y1="216" x2="466" y2="216"/><line x1="438" y1="238" x2="466" y2="238"/></g>
+    </g>
+
+    <!-- STATION 3: toetsingsterminal -->
+    <g class="hotspot" id="hs3" tabindex="0" role="button" aria-label="Station 3: toetsingsterminal">
+      <ellipse cx="577" cy="270" rx="78" ry="7" fill="#000814" opacity=".28" filter="url(#zachtF)"/>
+      <rect x="502" y="150" width="150" height="94" rx="9" fill="url(#schermG)" stroke="#c48ba1" stroke-width="2.5"/>
+      <polygon points="502,150 556,150 520,244 502,244" fill="#ffffff" opacity=".05"/>
+      <line x1="518" y1="222" x2="636" y2="222" stroke="#56679a" stroke-width="1.5"/>
+      <path d="M520 222 C548 222 554 168 577 168 C600 168 606 222 634 222" fill="none" stroke="#b9c6e4" stroke-width="2.5"/>
+      <path d="M520 222 L534 222 C528 217 524 211 522 206 C521 212 520 218 520 222 Z" fill="#c48ba1"/>
+      <path d="M634 222 L620 222 C626 217 630 211 632 206 C633 212 634 218 634 222 Z" fill="#c48ba1"/>
+      <rect x="562" y="244" width="30" height="12" fill="#2c3a63"/>
+      <rect x="540" y="256" width="74" height="6" rx="3" fill="#2c3a63"/>
+      <rect x="532" y="268" width="90" height="9" rx="3" fill="#2a3a67"/>
+      <rect class="vlak" x="494" y="142" width="166" height="130"/>
+      <text class="naamlabel" x="577" y="136" text-anchor="middle" fill="#de9cb8" font-size="15">3 · Toetsingsterminal</text>
+      <g class="vinkje" transform="translate(640,158)"><circle r="13" fill="#24A793"/><text y="5" text-anchor="middle" fill="#fff" font-size="15" font-weight="bold">✓</text></g>
+    </g>
+
+    <!-- decor: koffiemok -->
+    <g aria-hidden="true">
+      <rect x="664" y="250" width="16" height="18" rx="3" fill="#c48ba1"/>
+      <path d="M680 254 q8 5 0 11" fill="none" stroke="#c48ba1" stroke-width="2.5"/>
+    </g>
+
+    <!-- STATION 4: regressieconsole -->
+    <g class="hotspot" id="hs4" tabindex="0" role="button" aria-label="Station 4: regressieconsole">
+      <ellipse cx="755" cy="270" rx="70" ry="7" fill="#000814" opacity=".28" filter="url(#zachtF)"/>
+      <rect x="690" y="150" width="130" height="94" rx="9" fill="url(#schermG)" stroke="#e0a97e" stroke-width="2.5"/>
+      <polygon points="690,150 736,150 704,244 690,244" fill="#ffffff" opacity=".05"/>
+      <line x1="704" y1="226" x2="806" y2="226" stroke="#56679a" stroke-width="1.5"/>
+      <line x1="704" y1="226" x2="704" y2="164" stroke="#56679a" stroke-width="1.5"/>
+      <g fill="#e8c877"><circle cx="718" cy="216" r="2.5"/><circle cx="732" cy="208" r="2.5"/><circle cx="748" cy="200" r="2.5"/><circle cx="762" cy="190" r="2.5"/><circle cx="778" cy="184" r="2.5"/><circle cx="792" cy="174" r="2.5"/></g>
+      <line x1="710" y1="220" x2="800" y2="170" stroke="#6fbfae" stroke-width="2.5"/>
+      <rect x="740" y="244" width="30" height="12" fill="#2c3a63"/>
+      <rect x="718" y="256" width="74" height="6" rx="3" fill="#2c3a63"/>
+      <rect x="712" y="268" width="86" height="9" rx="3" fill="#2a3a67"/>
+      <rect class="vlak" x="682" y="142" width="146" height="130"/>
+      <text class="naamlabel" x="755" y="136" text-anchor="middle" fill="#ecc39e" font-size="15">4 · Regressieconsole</text>
+      <g class="vinkje" transform="translate(808,158)"><circle r="13" fill="#24A793"/><text y="5" text-anchor="middle" fill="#fff" font-size="15" font-weight="bold">✓</text></g>
+    </g>
+
+    <!-- DE DEUR -->
+    <g class="hotspot" id="hsDeur" tabindex="0" role="button" aria-label="De deur met codepaneel">
+      <ellipse cx="934" cy="342" rx="54" ry="8" fill="#000814" opacity=".35" filter="url(#zachtF)"/>
+      <rect x="884" y="96" width="100" height="240" rx="4" fill="#0d1737" stroke="#46567f" stroke-width="3"/>
+      <g class="deurpaneel open" id="deurPaneel">
+        <rect x="888" y="100" width="92" height="232" rx="3" fill="url(#deurG)"/>
+        <rect x="896" y="112" width="76" height="80" rx="4" fill="none" stroke="#3c4c7c" stroke-width="2" opacity=".8"/>
+        <rect x="896" y="204" width="76" height="98" rx="4" fill="none" stroke="#3c4c7c" stroke-width="2" opacity=".8"/>
+        <rect x="892" y="312" width="84" height="14" fill="#3c4c7c" opacity=".8"/>
+        <circle cx="964" cy="220" r="5" fill="#e8c877"/>
+      </g>
+      <rect x="900" y="150" width="34" height="46" rx="4" fill="#101d40" stroke="#e8c877" stroke-width="2" id="codePaneel"/>
+      <text x="917" y="170" text-anchor="middle" fill="#e8c877" font-size="10" font-family="monospace">####</text>
+      <text x="917" y="186" text-anchor="middle" fill="#d98aa6" font-size="12" id="codeLampje">●</text>
+      <rect class="vlak" x="878" y="90" width="114" height="252"/>
+      <text class="naamlabel" x="934" y="84" text-anchor="middle" fill="#f0d9a0" font-size="15">De deur</text>
+    </g>
+
+    <!-- zachte vignettering en alarmlicht -->
+    <rect width="1000" height="420" fill="url(#vignetG)" pointer-events="none"/>
+    <rect id="alarmLicht" width="1000" height="420" fill="#d24545"/>
+  </svg>
+</template>
+
+<script>
+"use strict";
+// ---------- Geluid (WebAudio — volledig synthetisch, geen audiobestanden) ----------
+let audioCtx = null, masterGain = null, geluidAan = true, ambientNodes = null;
+function audioInit(){
+  if (audioCtx){ if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC){ geluidAan = false; return; }
+  audioCtx = new AC();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = geluidAan ? 0.5 : 0;
+  masterGain.connect(audioCtx.destination);
+}
+function nu(){ return audioCtx.currentTime; }
+function speelToon(freq, duur, golf, vol, start){
+  if (!audioCtx || !geluidAan) return;
+  start = start || 0;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = golf || 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, nu() + start);
+  g.gain.exponentialRampToValueAtTime(vol || 0.2, nu() + start + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, nu() + start + duur);
+  o.connect(g); g.connect(masterGain);
+  o.start(nu() + start); o.stop(nu() + start + duur + 0.05);
+}
+function speelRuis(duur, vol, filterFreq){
+  if (!audioCtx || !geluidAan) return;
+  const n = Math.floor(audioCtx.sampleRate * duur);
+  const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filterFreq || 1000;
+  const g = audioCtx.createGain(); g.gain.value = vol || 0.3;
+  src.connect(f); f.connect(g); g.connect(masterGain);
+  src.start();
+}
+const geluid = {
+  tik(){ // deelnemer geworven / datapunt
+    if (!audioCtx || !geluidAan) return;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(900, nu());
+    o.frequency.exponentialRampToValueAtTime(350, nu() + 0.09);
+    g.gain.setValueAtTime(0.25, nu());
+    g.gain.exponentialRampToValueAtTime(0.0001, nu() + 0.1);
+    o.connect(g); g.connect(masterGain); o.start(); o.stop(nu() + 0.12);
+  },
+  klap(){ speelRuis(0.25, 0.8, 300); speelToon(70, 0.35, 'sine', 0.5); },
+  flikkerTik(){ speelRuis(0.03, 0.15, 4000); },
+  goed(){ speelToon(660, 0.12, 'sine', 0.18); speelToon(880, 0.28, 'sine', 0.18, 0.12); },
+  fout(){ speelToon(170, 0.22, 'square', 0.07); },
+  hint(){ speelToon(520, 0.18, 'sine', 0.12); },
+  piep(){ speelToon(1250, 0.09, 'square', 0.05); speelToon(1250, 0.09, 'square', 0.05, 0.15); },
+  alarm(){
+    if (!audioCtx || !geluidAan) return;
+    for (let k = 0; k < 2; k++){
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(320, nu() + k * 0.8);
+      o.frequency.exponentialRampToValueAtTime(640, nu() + k * 0.8 + 0.5);
+      g.gain.setValueAtTime(0.045, nu() + k * 0.8);
+      g.gain.exponentialRampToValueAtTime(0.0001, nu() + k * 0.8 + 0.7);
+      o.connect(g); g.connect(masterGain);
+      o.start(nu() + k * 0.8); o.stop(nu() + k * 0.8 + 0.75);
+    }
+  },
+  deurOpen(){ [523, 659, 784, 1047].forEach((f, i) => speelToon(f, 0.32, 'sine', 0.15, i * 0.13)); },
+  fanfare(){ // korte feestelijke stijger bij een verdiend codecijfer
+    [392, 494, 587, 784].forEach((f, i) => speelToon(f, 0.22, 'triangle', 0.14, i * 0.1));
+    speelToon(988, 0.5, 'sine', 0.12, 0.42);
+  },
+};
+function startAmbient(){ // zachte server- en tl-zoem
+  if (!audioCtx || ambientNodes || !geluidAan) return;
+  const o = audioCtx.createOscillator(); o.type = 'sine'; o.frequency.value = 100;
+  const o2 = audioCtx.createOscillator(); o2.type = 'sine'; o2.frequency.value = 50;
+  const g = audioCtx.createGain(); g.gain.value = 0.012;
+  o.connect(g); o2.connect(g); g.connect(masterGain);
+  o.start(); o2.start();
+  ambientNodes = { o, o2 };
+}
+function stopAmbient(){
+  if (!ambientNodes) return;
+  try { ambientNodes.o.stop(); ambientNodes.o2.stop(); } catch(e){}
+  ambientNodes = null;
+}
+function wisselGeluid(){
+  geluidAan = !geluidAan;
+  if (masterGain) masterGain.gain.value = geluidAan ? 0.5 : 0;
+  if (!geluidAan) stopAmbient(); else if (audioCtx) startAmbient();
+  document.querySelectorAll('#geluidKnop, #geluidKnopIntro').forEach(k => k.textContent = geluidAan ? '🔊' : '🔇');
+}
+
+// ---------- Spelstatus (alleen in het geheugen) ----------
+const status = {
+  score: 25 * 4,
+  opgelost: [false, false, false, false],
+  cijfers: [null, null, null, null],
+};
+// Elk cijfer volgt uit de eigen uitkomst van de speler:
+// 1: z = 2,0 → 2 · 2: n = 64 → 4 · 3: t = 2,25 → 5 · 4: ŷ = 29,5 → 9
+const CODE = [2, 4, 5, 9];
+const stationKleuren = ['#5287C6', '#24A793', '#AA1555', '#F3965E'];
+
+function maakSlots(){
+  return status.cijfers.map((c, i) =>
+    '<span class="slot' + (c === null ? '' : ' vol') + '"' +
+    (c === null ? '' : ' style="background:' + stationKleuren[i] + '"') + '>' +
+    (c === null ? '·' : c) + '</span>').join('');
+}
+function updateHud(){
+  document.getElementById('scoreWeergave').textContent = Math.max(0, status.score);
+  document.getElementById('cijfersWeergave').innerHTML = maakSlots();
+  const n = status.opgelost.filter(Boolean).length;
+  document.getElementById('voortgangBalk').style.width = (n / 4 * 100) + '%';
+  if (n === 4) document.getElementById('deurTekst').textContent =
+    'Je hebt alle vier de cijfers. Voer de code in en ontsnap.';
+}
+function straf(p){ status.score = Math.max(0, status.score - p); updateHud(); }
+
+// ---------- Navigatie ----------
+function naarScherm(id){
+  document.querySelectorAll('.scherm').forEach(s => s.classList.remove('actief'));
+  document.getElementById(id).classList.add('actief');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function naarLab(){
+  document.getElementById('topbar').style.display = 'flex';
+  document.getElementById('voortgang').style.display = 'block';
+  naarScherm('scherm-lab');
+  startAmbient();
+  updateHud();
+}
+function stationKlaar(n){
+  status.opgelost[n-1] = true;
+  status.cijfers[n-1] = CODE[n-1];
+  const st = document.getElementById('st' + n);
+  st.classList.add('klaar');
+  const label = st.querySelector('.cijfer-onthuld');
+  label.textContent = 'Cijfer ' + n + ' van de code: ' + CODE[n-1];
+  label.style.display = 'inline-block';
+  const hs = document.getElementById('hs' + n);
+  if (hs) hs.classList.add('klaar');
+  updateHud();
+  toonBeloning(n);
+}
+
+// ---------- Beloningsscherm ----------
+function volgendDoel(n){
+  for (let k = 1; k <= 4; k++){
+    const i = ((n - 1 + k) % 4) + 1;
+    if (!status.opgelost[i - 1]) return i;
+  }
+  return 0; // alles opgelost → naar de deur
+}
+function toonBeloning(n){
+  const bel = document.getElementById('beloning');
+  bel.style.setProperty('--accent', stationKleuren[n - 1]);
+  document.getElementById('belKop').textContent = 'Station ' + n + ' · ' + stationNamen[n - 1] + ' opgelost';
+  document.getElementById('belTitel').textContent = 'Je hebt een codecijfer verdiend';
+  document.getElementById('belCijfer').textContent = CODE[n - 1];
+  const klaar = status.opgelost.filter(Boolean).length;
+  document.getElementById('belTekst').innerHTML =
+    'Dit cijfer volgt rechtstreeks uit je eigen uitkomst en hoort in <strong>vakje ' + n + '</strong> van het codepaneel bij de deur. ' +
+    (klaar === 4
+      ? 'Je hebt nu alle vier de cijfers — tijd om te ontsnappen!'
+      : 'Nog ' + (4 - klaar) + ' cijfer' + (4 - klaar === 1 ? '' : 's') + ' te gaan.');
+  document.getElementById('belSlots').innerHTML = maakSlots();
+  const knop = document.getElementById('belVolgende');
+  const doel = volgendDoel(n);
+  if (doel === 0){
+    knop.textContent = 'Naar de deur →';
+    knop.onclick = () => {
+      sluitBeloning();
+      naarLab();
+      setTimeout(() => document.querySelector('.deurcode input').focus(), 350);
+    };
+  } else {
+    knop.textContent = 'Naar station ' + doel + ' · ' + stationNamen[doel - 1] + ' →';
+    knop.onclick = () => { sluitBeloning(); naarScherm('scherm-p' + doel); };
+  }
+  bel.hidden = false;
+  confetti(60);
+  geluid.fanfare();
+  knop.focus();
+}
+function sluitBeloning(){
+  document.getElementById('beloning').hidden = true;
+}
+function toon(id, klasse, tekst){
+  const el = document.getElementById(id);
+  el.className = 'feedback ' + klasse;
+  el.innerHTML = tekst;
+  if (klasse === 'goed') geluid.goed();
+  else if (klasse === 'fout') geluid.fout();
+  else if (klasse === 'hint') geluid.hint();
+}
+
+// ---------- Labscène + hotspots ----------
+const labScene = document.getElementById('labSceneTemplate').content.firstElementChild;
+function koppelHotspots(){
+  const doelen = { hs1:'scherm-p1', hs2:'scherm-p2', hs3:'scherm-p3', hs4:'scherm-p4' };
+  for (const [id, scherm] of Object.entries(doelen)){
+    const el = labScene.querySelector('#' + id);
+    el.addEventListener('click', () => naarScherm(scherm));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); naarScherm(scherm); } });
+  }
+  const deur = labScene.querySelector('#hsDeur');
+  const naarPaneel = () => document.querySelector('.deurcode input').focus();
+  deur.addEventListener('click', naarPaneel);
+  deur.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); naarPaneel(); } });
+}
+koppelHotspots();
+
+// ---------- Duidelijke navigatie tussen de stations ----------
+const stationNamen = ['Whiteboard', 'Steekproefmachine', 'Toetsingsterminal', 'Regressieconsole'];
+function maakStationNav(n, onder){
+  const nav = document.createElement('nav');
+  nav.className = 'stationnav' + (onder ? ' onder' : '');
+  nav.setAttribute('aria-label', 'Navigatie tussen stations');
+  const vorig = n === 1 ? 4 : n - 1;
+  const volgend = n === 4 ? 1 : n + 1;
+  nav.innerHTML =
+    '<button class="btn klein" onclick="naarScherm(\'scherm-p' + vorig + '\')">← ' + vorig + ' · ' + stationNamen[vorig - 1] + '</button>' +
+    '<button class="btn klein midden" onclick="naarLab()">Lab-overzicht</button>' +
+    '<button class="btn klein" onclick="naarScherm(\'scherm-p' + volgend + '\')">' + volgend + ' · ' + stationNamen[volgend - 1] + ' →</button>';
+  return nav;
+}
+for (let n = 1; n <= 4; n++){
+  const kaart = document.querySelector('#scherm-p' + n + ' .kaart');
+  kaart.insertBefore(maakStationNav(n, false), kaart.querySelector('.stationscene'));
+  kaart.appendChild(maakStationNav(n, true));
+}
+
+// ---------- Confetti ----------
+const beweegOk = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function confetti(aantal){
+  if (!beweegOk) return;
+  const kleuren = ['#FFD200', '#24A793', '#5287C6', '#AA1555', '#F3965E', '#FFE6AB'];
+  for (let i = 0; i < (aantal || 26); i++){
+    const s = document.createElement('div');
+    s.className = 'confetti';
+    s.style.left = (5 + Math.random() * 90) + 'vw';
+    s.style.background = kleuren[i % kleuren.length];
+    s.style.animationDelay = (Math.random() * 0.5) + 's';
+    s.style.setProperty('--rx', (Math.random() * 900 - 450) + 'deg');
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 3200);
+  }
+}
+
+// ---------- Intro-cutscene ----------
+const introRegels = [
+  [0,    'Donderdagnacht, 23:58. Jij werkt als laatste in het datalab aan je kwantitatieve eindopdracht.'],
+  [3200, 'De tl-buizen beginnen te flikkeren…'],
+  [6200, 'KLIK. Middernacht — de nachtvergrendeling valt in het slot.'],
+  [8600, 'Het paneel vraagt vier cijfers. Vier stations. Verwerp H₀ en ontsnap.'],
+];
+let introTimers = [];
+let introBezig = false;
+
+function startIntro(){
+  audioInit();
+  naarScherm('scherm-intro');
+  const houder = document.getElementById('introHouder');
+  laadVideo(houder, 'videos/intro.mp4',
+    () => {
+      introBezig = true;
+      houder.querySelector('video').addEventListener('ended', eindIntro);
+    },
+    () => speelIntroAnimatie(houder)
+  );
+}
+function speelIntroAnimatie(houder){
+  introBezig = true;
+  houder.appendChild(labScene);
+  houder.classList.add('intro-zoom');
+  labScene.querySelectorAll('.hotspot').forEach(h => h.classList.add('uit'));
+  const tekst = document.getElementById('introTekst');
+  const paneel = labScene.querySelector('#deurPaneel');
+  introRegels.forEach(([t, regel]) => {
+    introTimers.push(setTimeout(() => {
+      tekst.style.opacity = 0;
+      setTimeout(() => { tekst.textContent = regel; tekst.style.opacity = 1; }, 250);
+    }, t));
+  });
+  introTimers.push(setTimeout(() => { labScene.querySelector('#klokTekst').textContent = '23:59'; }, 3000));
+  introTimers.push(setTimeout(() => {
+    labScene.querySelectorAll('.tl-lamp').forEach(l => l.classList.add('flikker'));
+    for (let i = 0; i < 8; i++){
+      introTimers.push(setTimeout(() => geluid.flikkerTik(), i * 340 + Math.random() * 120));
+    }
+  }, 3200));
+  introTimers.push(setTimeout(() => {
+    paneel.classList.remove('open'); paneel.classList.add('dicht');
+    labScene.querySelector('#klokTekst').textContent = '00:00';
+    geluid.klap();
+    houder.classList.add('scene-shake');
+    setTimeout(() => houder.classList.remove('scene-shake'), 600);
+  }, 6200));
+  introTimers.push(setTimeout(() => {
+    labScene.querySelector('#alarmLicht').classList.add('aan');
+    geluid.alarm();
+  }, 6900));
+  introTimers.push(setTimeout(eindIntro, 11500));
+}
+function eindIntro(){
+  if (!introBezig) return;
+  introBezig = false;
+  introTimers.forEach(clearTimeout); introTimers = [];
+  document.getElementById('introHouder').classList.remove('intro-zoom');
+  labScene.querySelector('#alarmLicht').classList.remove('aan');
+  labScene.querySelector('#klokTekst').textContent = '00:00';
+  const hub = document.getElementById('labSceneHouder');
+  hub.innerHTML = '';
+  hub.appendChild(labScene);
+  labScene.querySelectorAll('.hotspot').forEach(h => h.classList.remove('uit'));
+  labScene.querySelectorAll('.tl-lamp').forEach(l => l.classList.remove('flikker'));
+  const introVideo = document.querySelector('#introHouder video');
+  if (introVideo){ introVideo.pause(); introVideo.remove(); }
+  naarLab();
+}
+
+// ---------- Optionele video's per station ----------
+function laadVideo(container, bron, bijSucces, bijFout){
+  const v = document.createElement('video');
+  v.src = bron;
+  v.muted = true; v.autoplay = true; v.playsInline = true; v.controls = true;
+  v.addEventListener('loadeddata', () => {
+    container.prepend(v);
+    const svg = container.querySelector('svg');
+    if (svg) svg.style.display = 'none';
+    if (bijSucces) bijSucces();
+  }, { once:true });
+  v.addEventListener('error', () => { v.remove(); if (bijFout) bijFout(); }, { once:true });
+}
+document.querySelectorAll('.stationscene[data-video]').forEach(sc => {
+  laadVideo(sc, sc.dataset.video, null, () => {
+    if (sc.dataset.alleenVideo && !sc.querySelector('svg')) sc.style.display = 'none';
+  });
+});
+
+// ---------- Uitleg per vraag (gratis: conceptuitleg, geen antwoord) ----------
+const UITLEG = {
+  p1z: 'Een z-score zet een losse score om naar een gestandaardiseerde schaal: hoeveel <em>standaardafwijkingen</em> ligt de score boven (positief) of onder (negatief) het gemiddelde? Stap 1: bereken de afwijking van het gemiddelde (x − M). Stap 2: deel die afwijking door de standaardafwijking SD. Een z van 1 betekent dus: precies één standaardafwijking boven het gemiddelde.',
+  p1b: 'Scheefheid gaat over de staart van de verdeling. Rechts-scheef = een lange staart naar rechts (enkele hoge uitschieters). Het gemiddelde is gevoelig voor die uitschieters en wordt de staart in getrokken; de mediaan — de middelste waarneming — blijft liggen. Schets de verdeling desnoods even voor jezelf.',
+  p1c: 'Vraag je bij elke maat af: wat gebeurt er als ik één extreme waarde aan de dataset toevoeg? Maten die met álle waarden rekenen (gemiddelde, variantie, standaardafwijking) schuiven mee. Een maat die alleen naar de positie van het midden kijkt, verandert dan nauwelijks.',
+  mchOpdracht: 'De standaardfout (SE) zegt hoe precies een steekproefgemiddelde de populatie schat: hoe kleiner, hoe preciezer. De formule SE = σ/√n laat zien dat SE daalt als n stijgt — maar via een wortel, dus steeds langzamer. Je kunt twee kanten op: proberen met de knoppen en kijken wanneer SE onder 1,5 zakt, of algebraïsch: los σ/√n = 1,5 op naar n (eerst √n isoleren, daarna kwadrateren).',
+  p3t: 'De t-waarde drukt uit hoeveel <em>standaardfouten</em> het steekproefgemiddelde van de waarde onder H₀ af ligt. Werk in twee stappen: bereken eerst de standaardfout s/√n (de noemer), en deel daarna het verschil M − μ₀ door die standaardfout. Bedenk: √36 is gewoon 6.',
+  p3b: 'Bij toetsen vergelijk je jouw t-waarde met de kritieke waarde. Ligt |t| voorbij t-kritiek, dan valt de toetsingsgrootheid in het kritieke gebied en verwerp je H₀. Let op de formulering: H₀ "accepteren" of "bewijzen" bestaat niet — je verwerpt H₀, of je verwerpt H₀ niet.',
+  p3c: 'De p-waarde is een voorwaardelijke kans over de <em>data</em>, niet over de hypothese. Lees hem als: stel dat H₀ waar is — hoe waarschijnlijk is dan een resultaat als dit, of nog extremer? Elke formulering die een kans aan H₀ zelf toekent ("de kans dat H₀ waar is") is per definitie onjuist.',
+  p3d: 'Een type I-fout is H₀ verwerpen terwijl H₀ in werkelijkheid waar is. Het significantieniveau α is precies de kans die je daarop accepteert: je verwerpt immers zodra p &lt; α. Die kans leg je vooraf vast in je toetsopzet; de steekproefomvang beïnvloedt vooral de power (het vermijden van type II-fouten).',
+  p4y: 'Lees de regressievergelijking uit de kolom B: de constante is b₀ (de voorspelde score bij x = 0) en de coëfficiënt bij "Uren sport" is b₁ (de verandering in ŷ per extra uur sport). Daarna is het invullen: ŷ = b₀ + b₁ × 5.',
+  p4b: 'R² heet de proportie verklaarde variantie: welk deel van de verschillen in Y tussen studenten "verklaart" het model? Vermenigvuldig met 100 voor een percentage. Verwar R² niet met de correlatie R zelf — die staat er los naast (0,60).',
+  p4c: 'Stel je de puntenwolk voor met de regressielijn erdoorheen. De lijn geeft voor elke x een voorspelling (ŷ); een echt datapunt ligt daar meestal iets boven of onder. De verticale afstand tussen punt en lijn is het residu — en de lijn ligt precies zó dat de som van de gekwadrateerde residuen minimaal is.',
+};
+Object.entries(UITLEG).forEach(([id, tekst]) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const blok = el.closest('.vraagblok') || el.parentElement;
+  const label = blok.querySelector('label') || el;
+  const paneel = document.createElement('div');
+  paneel.className = 'uitleg';
+  paneel.innerHTML = tekst;
+  const knop = document.createElement('button');
+  knop.type = 'button';
+  knop.className = 'infoknop';
+  knop.textContent = 'i';
+  knop.title = 'Uitleg: waar begin ik?';
+  knop.setAttribute('aria-label', 'Uitleg: waar begin ik?');
+  knop.setAttribute('aria-expanded', 'false');
+  knop.addEventListener('click', () => {
+    const open = paneel.classList.toggle('open');
+    knop.setAttribute('aria-expanded', String(open));
+    if (open) geluid.tik();
+  });
+  label.appendChild(knop);
+  label.insertAdjacentElement('afterend', paneel);
+});
+
+// ---------- Uitlegknoppen (gratis conceptuitleg per vraag) ----------
+const uitlegTeksten = {
+  p1z: 'Een <strong>z-score</strong> standaardiseert een score: hij drukt uit hoeveel standaardafwijkingen een waarneming boven (positief) of onder (negatief) het gemiddelde ligt. Begin met het verschil tussen de score en het gemiddelde (x − M) en deel dat verschil door de standaardafwijking. Zo kun je scores uit verschillende verdelingen met elkaar vergelijken.',
+  p1b: 'Een verdeling is <strong>rechts-scheef</strong> als de lange staart naar rechts wijst (enkele hoge uitschieters). Het gemiddelde is gevoelig voor extreme waarden en wordt in de richting van de staart getrokken; de mediaan — de middelste waarneming — blijft daar vrijwel ongevoelig voor. Bedenk dus welke van de twee wordt "meegetrokken".',
+  p1c: 'Vergelijk hoe elke maat reageert als je één extreme waarde aan de data toevoegt. Het <strong>gemiddelde</strong> gebruikt álle waarden in de berekening en schuift dus mee; de <strong>mediaan</strong> kijkt alleen naar de positie van de middelste waarneming. Variantie en standaardafwijking zijn bovendien spreidingsmaten, geen centrummaten.',
+  p2opdracht: 'De <strong>standaardfout</strong> (SE) is de standaardafwijking van de steekproevenverdeling van het gemiddelde: hoe kleiner de SE, hoe minder steekproefgemiddelden onderling verschillen en hoe nauwkeuriger je schatting. Omdat SE = σ/√n geldt: meer deelnemers → kleinere SE, maar de winst neemt af (wortel!). Schrijf de eis als vergelijking: voor welke n is 12/√n precies gelijk aan 1,5? Werk de wortel weg door beide kanten om te schrijven naar √n.',
+  p3t: 'De toetsingsgrootheid <strong>t</strong> drukt uit hoeveel standaardfouten het steekproefgemiddelde van de waarde onder H₀ af ligt — vergelijkbaar met een z-score, maar met de geschátte spreiding s. Bereken daarom eerst de standaardfout s/√n en deel daarna het verschil (M − μ₀) door die standaardfout.',
+  p3b: 'De beslisregel: vergelijk |t| met de <strong>kritieke waarde</strong>. Valt de toetsingsgrootheid in het kritieke gebied (|t| groter dan de kritieke waarde), dan is dit resultaat onder H₀ zó onwaarschijnlijk dat je H₀ verwerpt. Let op: buiten het kritieke gebied "accepteer" je H₀ niet — je kunt hem alleen niet verwerpen.',
+  p3c: 'De <strong>p-waarde</strong> is een voorwaardelijke kans over de dáta, niet over de hypothese: hij geeft aan hoe waarschijnlijk dit resultaat (of een extremer resultaat) is áls H₀ waar zou zijn. Formuleringen als "de kans dat H₀ waar is" of "de kans dat het toeval is" zijn klassieke misinterpretaties.',
+  p3d: 'Een <strong>type I-fout</strong> is het onterecht verwerpen van een ware H₀. Het significantieniveau α is precies de kans die je daarop accepteert: die stel je vóóraf vast en hangt dus niet af van de steekproef of de data.',
+  p4y: 'De regressievergelijking <strong>ŷ = b₀ + b₁·x</strong> voorspelt Y voor een gegeven X. Hierin is b₀ de constante (de voorspelde waarde bij x = 0) en b₁ de helling (de verandering in ŷ per extra eenheid x). Lees beide af uit de coëfficiëntentabel en vul de gevraagde x in.',
+  p4b: '<strong>R²</strong> (de determinatiecoëfficiënt) is de proportie van de variantie in de afhankelijke variabele die het model verklaart; vermenigvuldig met 100 voor een percentage. Verwar R² niet met de correlatie R zelf — R² is daarvan het kwadraat.',
+  p4c: 'Voor elke waarneming voorspelt de regressielijn een waarde (ŷ). Het <strong>residu</strong> is wat de lijn "mist": het verticale verschil tussen de geobserveerde en de voorspelde waarde. De kleinste-kwadratenmethode kiest de lijn waarvoor de som van de gekwadrateerde residuen minimaal is.',
+};
+function plaatsUitlegknop(anker, sleutel){
+  const knop = document.createElement('button');
+  knop.type = 'button';
+  knop.className = 'infoknop';
+  knop.textContent = 'i';
+  knop.setAttribute('aria-label', 'Uitleg: waar begin ik?');
+  knop.setAttribute('aria-expanded', 'false');
+  const paneel = document.createElement('div');
+  paneel.className = 'uitleg';
+  paneel.innerHTML = uitlegTeksten[sleutel];
+  knop.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    const open = paneel.classList.toggle('open');
+    knop.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  anker.appendChild(knop);
+  anker.parentNode.insertBefore(paneel, anker.nextSibling);
+}
+document.querySelectorAll('.vraagblok').forEach(blok => {
+  const ctrl = blok.querySelector('select, input');
+  if (ctrl && uitlegTeksten[ctrl.id]) plaatsUitlegknop(blok.querySelector('label'), ctrl.id);
+});
+plaatsUitlegknop(document.getElementById('p2opdracht'), 'p2opdracht');
+
+// ---------- Hints ----------
+const hints = {
+  1: 'a. z drukt uit hoeveel standaardafwijkingen een score van het gemiddelde ligt: (8,0 − 6,4) / 0,8. — b. Bij een rechts-scheve verdeling trekt de lange rechterstaart het gemiddelde omhoog. — c. Denk aan wat er gebeurt met elke maat als je één extreme waarde toevoegt.',
+  2: 'Vul in: SE = 12/√n. Bij welke n wordt 12/√n precies 1,5? Los op: √n = 12/1,5 = 8, dus n = 8² . Elke deelnemer méér dan dat is verspild budget.',
+  3: 'a. Eerst de standaardfout: s/√n = 12/6 = 2. Dan t = (104,5 − 100)/2. — b. Vergelijk |t| met 2,030. — c. De p-waarde is een kansuitspraak over de dáta, gegeven H₀ — niet over H₀ zelf. — d. Bij een ware H₀ is de kans op onterecht verwerpen precies α.',
+  4: 'a. ŷ = b₀ + b₁·x = 20,5 + 1,8 × 5. — b. R² is de proportie verklaarde variantie. — c. Een residu is het verticale verschil tussen een datapunt en de regressielijn.',
+};
+function hint(n){
+  straf(5);
+  toon('fb' + n, 'hint', '💡 ' + hints[n]);
+}
+
+// ---------- Station 1: beschrijvende statistiek & z-scores ----------
+function checkP1(){
+  const z = parseFloat(String(document.getElementById('p1z').value).replace(',', '.'));
+  const b = document.getElementById('p1b').value;
+  const c = document.getElementById('p1c').value;
+  if (isNaN(z) || !b || !c){ toon('fb1','fout','Vul eerst alle drie de onderdelen in.'); return; }
+  const zGoed = z >= 1.95 && z <= 2.05;
+  const bGoed = b === 'Het gemiddelde ligt hoger dan de mediaan';
+  const cGoed = c === 'De mediaan';
+  if (zGoed && bGoed && cGoed){
+    stationKlaar(1);
+    toon('fb1','goed','Correct: z = (8,0 − 6,4)/0,8 = <strong>2,0</strong> — deze student scoort twee standaardafwijkingen boven het gemiddelde. Het eerste cijfer van de code is het gehele deel van je z-score: <strong>2</strong>.');
+  } else {
+    straf(2);
+    const fouten = [];
+    if (!zGoed) fouten.push('de z-score');
+    if (!bGoed) fouten.push('de scheve verdeling');
+    if (!cGoed) fouten.push('de robuuste centrummaat');
+    toon('fb1','fout','Nog niet alles klopt (controleer ' + fouten.join(', ') + '). −2 punten.');
+  }
+}
+
+// ---------- Station 2: steekproefmachine ----------
+const SIGMA = 12, SE_DOEL = 1.5, N_MAX = 70, N_OPTIMAAL = 64;
+let mchAantal = 0;
+function mchTeken(){
+  document.getElementById('mchN').textContent = mchAantal;
+  const seEl = document.getElementById('mchSE');
+  const statusEl = document.getElementById('mchStatus');
+  const klaarBtn = document.getElementById('mchKlaar');
+  const curve = document.getElementById('seCurve');
+  klaarBtn.disabled = true;
+  if (mchAantal === 0){
+    seEl.textContent = '—';
+    statusEl.textContent = 'nog geen deelnemers geworven';
+    curve.style.transform = 'scaleX(1)';
+    return;
+  }
+  const se = SIGMA / Math.sqrt(mchAantal);
+  seEl.textContent = se.toFixed(2).replace('.', ',');
+  const breedte = Math.min(1, Math.max(0.14, se / 6));
+  curve.style.transform = 'scaleX(' + breedte.toFixed(3) + ')';
+  if (se <= SE_DOEL){
+    statusEl.textContent = 'SE ≤ 1,5 — nauwkeurig genoeg. Maar is dit ook de kléinste steekproef?';
+    klaarBtn.disabled = false;
+  } else if (se <= 2.2){
+    statusEl.textContent = 'bijna — de verdeling wordt smal, maar SE is nog boven de eis';
+  } else {
+    statusEl.textContent = 'de steekproevenverdeling is nog te breed (SE te groot)';
+  }
+}
+function werf(n){
+  mchAantal += n;
+  geluid.tik();
+  if (mchAantal > N_MAX){
+    straf(2);
+    toon('fb2','fout','Budget overschreden: meer dan ' + N_MAX + ' deelnemers kun je niet betalen. De aanvraag vervalt — begin opnieuw. −2 punten.');
+    mchAantal = 0;
+  }
+  mchTeken();
+}
+function mchReset(metStraf){
+  mchAantal = 0;
+  mchTeken();
+}
+function checkP2(){
+  if (mchAantal === N_OPTIMAAL){
+    stationKlaar(2);
+    toon('fb2','goed','Precies: 12/√64 = 12/8 = <strong>1,5</strong> — de kleinste steekproef die aan de eis voldoet. Grotere n = kleinere standaardfout = smallere steekproevenverdeling, maar boven n = 64 betaal je voor nauwkeurigheid die niemand vroeg. Het tweede cijfer van de code is het laatste cijfer van je steekproefomvang: <strong>4</strong>.');
+  } else {
+    straf(2);
+    toon('fb2','fout','SE voldoet, maar met n = ' + mchAantal + ' werf je méér deelnemers dan nodig. De subsidieverstrekker eist de kleinste steekproef waarvoor SE ≤ 1,5. −2 punten.');
+  }
+}
+
+// ---------- Station 3: t-toets ----------
+function checkP3(){
+  const t = parseFloat(String(document.getElementById('p3t').value).replace(',', '.'));
+  const b = document.getElementById('p3b').value;
+  const c = document.getElementById('p3c').value;
+  const d = document.getElementById('p3d').value;
+  if (isNaN(t) || !b || !c || !d){ toon('fb3','fout','Vul eerst alle vier de onderdelen in.'); return; }
+  const tGoed = t >= 2.2 && t <= 2.3;
+  const bGoed = b === 'H₀ verwerpen: de t-waarde valt in het kritieke gebied';
+  const cGoed = c === 'De kans op dit resultaat of extremer, als H₀ waar is';
+  const dGoed = d === '5%';
+  if (tGoed && bGoed && cGoed && dGoed){
+    stationKlaar(3);
+    toon('fb3','goed','Sterk: SE = 12/√36 = 2, dus t = 4,5/2 = <strong>2,25</strong>. Omdat |2,25| &gt; 2,030 valt de toetsingsgrootheid in het kritieke gebied: H₀ verworpen, t(35) = 2,25, p &lt; .05. En de kans op een type I-fout is per definitie α. Het derde cijfer van de code is het laatste cijfer van je t-waarde: <strong>5</strong>.');
+  } else {
+    straf(2);
+    const fouten = [];
+    if (!tGoed) fouten.push('de t-waarde');
+    if (!bGoed) fouten.push('de beslissing');
+    if (!cGoed) fouten.push('de p-waarde-interpretatie');
+    if (!dGoed) fouten.push('de type I-fout');
+    geluid.piep();
+    toon('fb3','fout','De terminal weigert (controleer ' + fouten.join(', ') + '). −2 punten.');
+  }
+}
+
+// ---------- Station 4: regressie ----------
+function checkP4(){
+  const y = parseFloat(String(document.getElementById('p4y').value).replace(',', '.'));
+  const b = document.getElementById('p4b').value;
+  const c = document.getElementById('p4c').value;
+  if (isNaN(y) || !b || !c){ toon('fb4','fout','Vul eerst alle drie de onderdelen in.'); return; }
+  const yGoed = y >= 29.4 && y <= 29.6;
+  const bGoed = b === '36% van de variantie in welzijn wordt verklaard door het model';
+  const cGoed = c === 'Het verschil tussen de geobserveerde en de voorspelde welzijnsscore';
+  if (yGoed && bGoed && cGoed){
+    stationKlaar(4);
+    toon('fb4','goed','Klopt: ŷ = 20,5 + 1,8 × 5 = <strong>29,5</strong>. R² = 0,36 betekent dat het model 36% van de variantie in welzijn verklaart (en 64% dus niet) — en elk residu is het verschil tussen wat je zag en wat de lijn voorspelde. Het vierde cijfer van de code is het tweede cijfer van je voorspelling: <strong>9</strong>.');
+  } else {
+    straf(2);
+    const fouten = [];
+    if (!yGoed) fouten.push('de voorspelling');
+    if (!bGoed) fouten.push('de R²-interpretatie');
+    if (!cGoed) fouten.push('het residu');
+    toon('fb4','fout','De console geeft een foutmelding (controleer ' + fouten.join(', ') + '). −2 punten.');
+  }
+}
+
+// ---------- Deur ----------
+function probeerDeur(){
+  const invoer = [...document.querySelectorAll('.deurcode input')].map(i => i.value.trim());
+  if (invoer.some(v => v === '')){ toon('fbDeur','fout','Vul alle vier de cijfers in.'); return; }
+  if (invoer.join('') === CODE.join('')){
+    const lampje = labScene.querySelector('#codeLampje');
+    if (lampje) lampje.setAttribute('fill', '#24A793');
+    const paneel = labScene.querySelector('#deurPaneel');
+    if (paneel){ paneel.classList.remove('dicht'); paneel.classList.add('open'); }
+    geluid.deurOpen();
+    stopAmbient();
+    confetti(80);
+    document.getElementById('eindScore').textContent = Math.max(0, status.score);
+    const s = Math.max(0, status.score);
+    document.getElementById('eindOordeel').textContent =
+      s >= 90 ? 'Significant én relevant: foutloos, zonder hulp. p < .001.' :
+      s >= 70 ? 'Overtuigend verworpen — een stevig resultaat met een nette effectgrootte.' :
+      s >= 50 ? 'Ontsnapt, maar de power kan omhoog. Herhaal de Grasple-lessen nog eens.' :
+      'Ontsnapt op het nippertje — dit resultaat overleeft geen replicatie. Terug naar het formuleblad.';
+    setTimeout(() => {
+      naarScherm('scherm-eind');
+      document.getElementById('topbar').style.display = 'none';
+      document.getElementById('voortgang').style.display = 'none';
+    }, 700);
+  } else {
+    straf(2);
+    toon('fbDeur','fout','Het paneel knippert rood: verkeerde code. −2 punten. Kijk terug naar de cijfers die je aan de stations hebt verdiend.');
+  }
+}
+document.querySelectorAll('.deurcode input').forEach((inp, i, alle) => {
+  inp.addEventListener('input', () => { if (inp.value && alle[i+1]) alle[i+1].focus(); });
+});
+document.getElementById('beloning').addEventListener('click', e => {
+  if (e.target.id === 'beloning') sluitBeloning();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') sluitBeloning();
+});
+
+mchTeken();
+</script>
+</body>
+</html>
