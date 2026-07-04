@@ -1,4 +1,4 @@
-# Kritiek Gebied
+# StatistiekMaatje
 
 *Verwerp H₀ en ontsnap uit het datalab.*
 
